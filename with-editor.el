@@ -210,6 +210,22 @@ instead."
   :group 'with-editor
   :type 'string)
 
+(defcustom with-editor-use-zsh-array nil
+  "Whether to set shell variables using Zsh's array syntax.
+
+If the SH_WORD_SPLIT option isn't set, then Zsh does not support
+something like EDITOR=\"sh -c 'echo ...'\", which With-Editor uses
+by default.  Instead on has to use `EDITOR=(sh -c 'echo ...').
+
+If you have configured Zsh so that it only accepts the second
+form, then you should this to t.  You can also use a predicate
+function that returns a boolean, which may be useful if you use
+Zsh locally, but not on all machines you connect to using Tramp."
+  :group 'with-editor
+  :type '(choice (const :tag "on" t)
+                 (const :tag "off" nil)
+                 (function :tag "Predicate")))
+
 (defcustom with-editor-finish-query-functions nil
   "List of functions called to query before finishing session.
 
@@ -567,7 +583,9 @@ This works in `shell-mode', `term-mode' and `eshell-mode'."
       (goto-char (process-mark process))
       (process-send-string
        process (format " export %s=%s\n" envvar
-                       (shell-quote-argument with-editor-sleeping-editor)))
+                       (if with-editor-use-zsh-array
+                           nil
+                         (shell-quote-argument with-editor-sleeping-editor))))
       (while (accept-process-output process 0.1))
       (set-process-filter process filter)
       (if (derived-mode-p 'term-mode)
